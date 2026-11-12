@@ -142,7 +142,7 @@ async function logoutController(req, res) {
 
 
 //Update User Data in Database
-async function updateUser(res,res) {
+async function updateUser(req,res) {
   const userId = req.user;
   const {full_name, email, image_url} = req.body
 
