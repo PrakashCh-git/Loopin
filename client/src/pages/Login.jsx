@@ -1,11 +1,50 @@
 import React, { useState } from "react";
 import { Star } from "lucide-react";
+import axios from "axios";
 
-import { assets } from "../../../assets/assets";
-import Logo from "../../../assets/LoopinLogo.png";
+import { assets } from "../assets/assets";
+import Logo from "../assets/LoopinLogo.png";
 
-const Login = () => {
+const Login = ({setIsAuthenticated}) => {
   const [currState, setCurrState] = useState("Login");
+  const [full_name, setFull_name] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  
+
+  async function submitHandler(e) {
+    e.preventDefault();
+    if (currState === "Login") {
+      try {
+        const response = await axios.post(
+          "http://localhost:3000/api/auth/login",
+          { email, password },
+          { withCredentials: true },
+        );
+        setIsAuthenticated(true);
+        setFull_name("")
+        setEmail("")
+        setPassword("")
+      } catch (error) {
+        console.error("Login failed:", error.response?.data || error.message);
+        throw error;
+      }
+    } else {
+      try {
+        const response = await axios.post(
+          "http://localhost:3000/api/auth/register",
+          { full_name,email, password },
+          { withCredentials: true },
+        );
+        setFull_name("")
+        setEmail("")
+        setPassword("")
+      } catch (error) {
+        console.error("Register failed:", error.response?.data || error.message);
+        throw error;
+      }
+    }
+  }
 
   return (
     <main className="relative min-h-screen overflow-x-hidden">
@@ -75,27 +114,30 @@ const Login = () => {
                 </h1>
 
                 <p className="mt-1 text-sm text-gray-500">
-                  Welcome back! Please <span className="lowercase">{currState}</span> to continue
+                  Welcome back! Please{" "}
+                  <span className="lowercase">{currState}</span> to continue
                 </p>
               </div>
 
               {/* Form */}
-              <form className="space-y-5">
+              <form className="space-y-5" onSubmit={submitHandler}>
                 {/* Full Name */}
                 {currState === "Sign up" && (
                   <div>
                     <label
-                      htmlFor="email"
+                      htmlFor="full_name"
                       className="mb-2 block text-sm font-medium text-gray-800"
                     >
                       Full name
                     </label>
 
                     <input
-                      id="name"
+                      id="full_name"
                       type="text"
                       placeholder="Enter your full name"
                       className="w-full rounded-md border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
+                      value={full_name}
+                      onChange={(e) => setFull_name(e.target.value)}
                     />
                   </div>
                 )}
@@ -114,6 +156,8 @@ const Login = () => {
                     type="email"
                     placeholder="Enter your email address"
                     className="w-full rounded-md border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                   />
                 </div>
 
@@ -131,10 +175,12 @@ const Login = () => {
                     type="password"
                     placeholder="Enter your password"
                     className="w-full rounded-md border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                   />
                 </div>
 
-                {currState === "Sign up" && (
+                {/* {currState === "Sign up" && (
                   <div>
                     <label
                       htmlFor="password"
@@ -150,7 +196,7 @@ const Login = () => {
                       className="w-full rounded-md border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
                     />
                   </div>
-                )}
+                )} */}
 
                 {/* Forgot Password */}
                 {currState === "Login" && (
