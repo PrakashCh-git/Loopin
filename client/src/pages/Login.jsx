@@ -17,7 +17,7 @@ const Login = ({setIsAuthenticated}) => {
     if (currState === "Login") {
       try {
         const response = await axios.post(
-          "http://localhost:3000/api/auth/login",
+          "https://loopin-1-9u8u.onrender.com/api/auth/login",
           { email, password },
           { withCredentials: true },
         );
@@ -32,7 +32,7 @@ const Login = ({setIsAuthenticated}) => {
     } else {
       try {
         const response = await axios.post(
-          "http://localhost:3000/api/auth/register",
+          "https://loopin-1-9u8u.onrender.com/api/auth/register",
           { full_name,email, password },
           { withCredentials: true },
         );

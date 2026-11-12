@@ -27,7 +27,7 @@ const App = () => {
 
       try {
         const response = await axios.get(
-          'http://localhost:3000/api/auth/get-me',
+          'https://loopin-1-9u8u.onrender.com/api/auth/get-me',
           { withCredentials: true }
         )
         setUser(response.data.user)
