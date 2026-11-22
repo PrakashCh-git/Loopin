@@ -1,12 +1,13 @@
 import userModel from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import generateToken from "../utils/generateToken.js";
+import upload from "../middlewares/multer.js";
 
+
+//Register Controller Function
 async function registerController(req, res) {
   try {
     const {full_name, email, password } = req.body;
-
-    
 
     if (!full_name || !email || !password) {
       return res.status(400).json({
@@ -60,6 +61,7 @@ async function registerController(req, res) {
   }
 }
 
+// Login Controller Function
 async function loginController(req, res) {
   try {
     const { email, password } = req.body;
@@ -110,6 +112,8 @@ async function loginController(req, res) {
   }
 }
 
+
+//Get Me Function
 async function getMe(req, res) {
   return res.status(200).json({
     success: true,
@@ -118,6 +122,8 @@ async function getMe(req, res) {
   });
 }
 
+
+// Logout Handler Function
 async function logoutController(req, res) {
   try {
     res.clearCookie("token", {
@@ -144,13 +150,34 @@ async function logoutController(req, res) {
 //Update User Data in Database
 async function updateUser(req,res) {
   const userId = req.user;
-  const {full_name, email, image_url} = req.body
+  const {full_name, email} = req.body
 
   try{ 
-    const updateUserData = {
-      email: email,
-      full_name: full_name,
-      profile_picture: image_url
+    const updateUserData = {}
+
+    if(full_name) updateUserData.full_name = full_name
+    if (email) updateUserData.email = email
+
+    if(req.files) {
+      const profileFile = req.files?.profile?.[0];
+      const coverFile = req.files?.cover?.[0];
+
+      if (profileFile) {
+        const uploadResponse = await imagekit.upload({
+          file: profileFile.buffer, // Multer ka RAM buffer seedha pass kar diya
+          fileName: `avatar_${userId}_${Date.now()}`,
+          folder: "/profile_pictures",
+        });
+        updateUserData.profile_picture = uploadResponse.url;
+      }
+      if (coverFile) {
+        const uploadResponse = await imagekit.upload({
+          file: coverFile.buffer, // Multer ka RAM buffer seedha pass kar diya
+          fileName: `cover_${userId}_${Date.now()}`,
+          folder: "/cover_pictures",
+        });
+        updateUserData.cover_photo = uploadResponse.url
+      }
     }
 
     await userModel.findByIdAndUpdate(userId,updateUserData)
@@ -166,6 +193,106 @@ async function updateUser(req,res) {
   }
 }
 
-export default { registerController, loginController, getMe, logoutController,updateUser};
 
-// https://loopin-1-9u8u.onrender.com
+//Discove User
+async function discoverUser(req,res) {
+    try{  
+      const userId = req.user._id;
+      const {input} = req.body;
+
+      const allUsers = await userModel.find({
+        $or:[
+          {username: new RegExp(input,'i')},
+          {email: new RegExp(input,'i')},
+          {full_name: new RegExp(input,'i')},
+          {location: new RegExp(input,'i')},
+        ]
+      })
+
+      const filteredUser = allUsers.filter(user=>user._id!==userId);
+
+      res.status(200).json({
+        success: true,
+        users:filteredUser
+      })
+
+    }
+    catch(err) {
+      console.log(err.message);
+      res.status(500).json({
+        message: err.message
+      })
+    }
+}
+
+
+//Follow User Function
+async function followUser(req,res) {
+    try{  
+
+      const {id} = req.body;
+      const userId = req.user._id;
+
+      const user = await userModel.findById(userId);
+
+      //Checking if the user already following the person
+      if(user.following.includes(id)) {
+        return res.status(400).json({
+          success:false,
+          message: "You are already following the user"
+        })
+      }
+      
+      //Following the user
+      user.following.push(id);
+      await user.save();
+
+      //Updating the follower list of the use being followed
+      const toUser = await userModel.findById(id);
+      toUser.followers.push(userId);
+      await toUser.save()
+
+
+      res.status(200).json({
+        success:true,
+        message: "Now you are following the user."
+      })
+    }
+    catch(err) {
+      console.log(err.message);
+      res.status(500).json({
+        message: err.message
+      })
+    }
+}
+
+
+async function unfollowUser(req,res) {
+    try{  
+      const {id} = req.body;
+      const userId = req.user._id;
+
+      const user = await userModel.findById(userId);
+
+      user.following = user.following.filter(user => user !== id);
+      await user.save();
+
+      const toUser = await userModel.findById(id);
+      toUser.followers = toUser.followers.filter(user => user !== userId);
+      toUser.save();
+
+      res.status(200).json({
+        success:true,
+        message: "You have successfully unfollowed the user"
+      })
+    }
+    catch(err) {
+      console.log(err.message);
+      res.status(500).json({
+        message: err.message
+      })
+    }
+}
+
+export default { registerController, loginController, getMe, logoutController, updateUser, discoverUser, followUser, unfollowUser};
+
